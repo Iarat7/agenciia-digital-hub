@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,56 +10,10 @@ import {
   Calendar,
   TrendingUp
 } from "lucide-react";
-
-interface Oportunidade {
-  id: string;
-  cliente: string;
-  empresa: string;
-  valor: number;
-  etapa: 'prospect' | 'proposta' | 'negociacao' | 'fechado' | 'perdido';
-  probabilidade: number;
-  data_fechamento: string;
-  descricao: string;
-}
+import { useOportunidades } from "@/hooks/useOportunidades";
 
 const Pipeline = () => {
-  const [oportunidades, setOportunidades] = useState<Oportunidade[]>([]);
-
-  useEffect(() => {
-    const oportunidadesSimuladas: Oportunidade[] = [
-      {
-        id: "1",
-        cliente: "João Silva",
-        empresa: "Tech Solutions",
-        valor: 15000,
-        etapa: "proposta",
-        probabilidade: 70,
-        data_fechamento: "2024-02-15",
-        descricao: "Campanha de marketing digital completa"
-      },
-      {
-        id: "2",
-        cliente: "Maria Santos",
-        empresa: "Inovação Digital",
-        valor: 8000,
-        etapa: "negociacao",
-        probabilidade: 50,
-        data_fechamento: "2024-02-20",
-        descricao: "Gestão de redes sociais"
-      },
-      {
-        id: "3",
-        cliente: "Carlos Oliveira",
-        empresa: "StartupXYZ",
-        valor: 25000,
-        etapa: "prospect",
-        probabilidade: 30,
-        data_fechamento: "2024-03-01",
-        descricao: "Plano completo de growth marketing"
-      }
-    ];
-    setOportunidades(oportunidadesSimuladas);
-  }, []);
+  const { oportunidades, isLoading } = useOportunidades();
 
   const getEtapaColor = (etapa: string) => {
     switch (etapa) {
@@ -96,8 +49,21 @@ const Pipeline = () => {
     }
   };
 
-  const totalValor = oportunidades.reduce((acc, opp) => acc + opp.valor, 0);
-  const valorPonderado = oportunidades.reduce((acc, opp) => acc + (opp.valor * opp.probabilidade / 100), 0);
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando oportunidades...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const totalValor = oportunidades.reduce((acc, opp) => acc + (opp.valor || 0), 0);
+  const valorPonderado = oportunidades.reduce((acc, opp) => acc + ((opp.valor || 0) * (opp.probabilidade || 0) / 100), 0);
 
   return (
     <div className="p-6">
@@ -123,7 +89,7 @@ const Pipeline = () => {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">R$ {totalValor.toLocaleString()}</div>
+                <div className="text-2xl font-bold">R$ {totalValor.toLocaleString('pt-BR')}</div>
                 <p className="text-xs text-muted-foreground">
                   {oportunidades.length} oportunidades
                 </p>
@@ -135,7 +101,7 @@ const Pipeline = () => {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">R$ {valorPonderado.toLocaleString()}</div>
+                <div className="text-2xl font-bold">R$ {valorPonderado.toLocaleString('pt-BR')}</div>
                 <p className="text-xs text-muted-foreground">
                   Baseado na probabilidade
                 </p>
@@ -158,57 +124,68 @@ const Pipeline = () => {
 
         {/* Lista de Oportunidades */}
         <div className="grid gap-6">
-          {oportunidades.map((oportunidade) => (
-            <Card key={oportunidade.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {oportunidade.cliente}
-                      </h3>
-                      <Badge className={getEtapaColor(oportunidade.etapa)}>
-                        {getEtapaText(oportunidade.etapa)}
-                      </Badge>
-                      <Badge variant="outline">
-                        {oportunidade.probabilidade}% probabilidade
-                      </Badge>
-                    </div>
-                    <p className="text-gray-600 font-medium mb-3">
-                      {oportunidade.empresa}
-                    </p>
-                    <p className="text-gray-700 mb-4">
-                      {oportunidade.descricao}
-                    </p>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-500">Valor da Proposta</p>
-                        <p className="text-xl font-semibold text-green-600">
-                          R$ {oportunidade.valor.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Fechamento Previsto</p>
-                        <p className="text-sm font-medium">
-                          {new Date(oportunidade.data_fechamento).toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 ml-4">
-                    <Button variant="outline" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+          {oportunidades.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-gray-500">Nenhuma oportunidade encontrada. Crie sua primeira oportunidade!</p>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            oportunidades.map((oportunidade) => (
+              <Card key={oportunidade.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {oportunidade.clientes?.nome || 'Cliente não encontrado'}
+                        </h3>
+                        <Badge className={getEtapaColor(oportunidade.etapa || 'prospect')}>
+                          {getEtapaText(oportunidade.etapa || 'prospect')}
+                        </Badge>
+                        <Badge variant="outline">
+                          {oportunidade.probabilidade || 0}% probabilidade
+                        </Badge>
+                      </div>
+                      <p className="text-gray-600 font-medium mb-3">
+                        {oportunidade.clientes?.empresa || 'Empresa não informada'}
+                      </p>
+                      <p className="text-gray-700 mb-4">
+                        {oportunidade.descricao}
+                      </p>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-500">Valor da Proposta</p>
+                          <p className="text-xl font-semibold text-green-600">
+                            R$ {(oportunidade.valor || 0).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Fechamento Previsto</p>
+                          <p className="text-sm font-medium">
+                            {oportunidade.data_fechamento 
+                              ? new Date(oportunidade.data_fechamento).toLocaleDateString('pt-BR')
+                              : 'Não definido'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 ml-4">
+                      <Button variant="outline" size="icon">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="icon">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </div>
