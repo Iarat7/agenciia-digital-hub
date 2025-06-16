@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +11,19 @@ import {
   Calendar,
   TrendingUp
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useOportunidades } from "@/hooks/useOportunidades";
+import OportunidadeForm from "@/components/forms/OportunidadeForm";
 
 const Pipeline = () => {
   const { oportunidades, isLoading } = useOportunidades();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const getEtapaColor = (etapa: string) => {
     switch (etapa) {
@@ -75,10 +85,20 @@ const Pipeline = () => {
               <h1 className="text-3xl font-bold text-gray-900">Pipeline Comercial</h1>
               <p className="text-gray-600">Gerencie suas oportunidades de vendas</p>
             </div>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Nova Oportunidade
-            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Nova Oportunidade
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Criar Nova Oportunidade</DialogTitle>
+                </DialogHeader>
+                <OportunidadeForm onSuccess={() => setIsDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* KPIs */}

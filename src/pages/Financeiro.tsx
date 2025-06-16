@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,60 +13,10 @@ import {
   CheckCircle,
   Clock
 } from "lucide-react";
-
-interface Contrato {
-  id: string;
-  cliente: string;
-  empresa: string;
-  valor_mensal: number;
-  data_vencimento: string;
-  status_pagamento: 'pago' | 'pendente' | 'atrasado';
-  tipo_servico: string;
-  data_inicio: string;
-  observacoes: string;
-}
+import { useContratos } from '@/hooks/useContratos';
 
 const Financeiro = () => {
-  const [contratos, setContratos] = useState<Contrato[]>([]);
-
-  useEffect(() => {
-    const contratosSimulados: Contrato[] = [
-      {
-        id: "1",
-        cliente: "João Silva",
-        empresa: "Tech Solutions",
-        valor_mensal: 5000,
-        data_vencimento: "2024-01-15",
-        status_pagamento: "pago",
-        tipo_servico: "SEO + Tráfego Pago",
-        data_inicio: "2023-06-15",
-        observacoes: "Cliente pontual, sem problemas"
-      },
-      {
-        id: "2",
-        cliente: "Maria Santos",
-        empresa: "Inovação Digital",
-        valor_mensal: 3000,
-        data_vencimento: "2024-01-20",
-        status_pagamento: "pendente",
-        tipo_servico: "Redes Sociais",
-        data_inicio: "2023-08-20",
-        observacoes: "Pagamento programado para hoje"
-      },
-      {
-        id: "3",
-        cliente: "Carlos Oliveira",
-        empresa: "StartupXYZ",
-        valor_mensal: 7500,
-        data_vencimento: "2024-01-10",
-        status_pagamento: "atrasado",
-        tipo_servico: "Growth Marketing",
-        data_inicio: "2023-05-10",
-        observacoes: "Entrar em contato urgente"
-      }
-    ];
-    setContratos(contratosSimulados);
-  }, []);
+  const { contratos, isLoading } = useContratos();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -107,10 +57,23 @@ const Financeiro = () => {
     }
   };
 
-  const totalReceita = contratos.reduce((acc, contrato) => acc + contrato.valor_mensal, 0);
-  const receitaPaga = contratos.filter(c => c.status_pagamento === 'pago').reduce((acc, contrato) => acc + contrato.valor_mensal, 0);
-  const receitaPendente = contratos.filter(c => c.status_pagamento === 'pendente').reduce((acc, contrato) => acc + contrato.valor_mensal, 0);
-  const receitaAtrasada = contratos.filter(c => c.status_pagamento === 'atrasado').reduce((acc, contrato) => acc + contrato.valor_mensal, 0);
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando contratos...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const totalReceita = contratos.reduce((acc, contrato) => acc + (contrato.valor_mensal || 0), 0);
+  const receitaPaga = contratos.filter(c => c.status_pagamento === 'pago').reduce((acc, contrato) => acc + (contrato.valor_mensal || 0), 0);
+  const receitaPendente = contratos.filter(c => c.status_pagamento === 'pendente').reduce((acc, contrato) => acc + (contrato.valor_mensal || 0), 0);
+  const receitaAtrasada = contratos.filter(c => c.status_pagamento === 'atrasado').reduce((acc, contrato) => acc + (contrato.valor_mensal || 0), 0);
 
   return (
     <div className="p-6">
@@ -136,7 +99,7 @@ const Financeiro = () => {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">R$ {totalReceita.toLocaleString()}</div>
+                <div className="text-2xl font-bold">R$ {totalReceita.toLocaleString('pt-BR')}</div>
                 <p className="text-xs text-muted-foreground">
                   {contratos.length} contratos ativos
                 </p>
@@ -148,7 +111,7 @@ const Financeiro = () => {
                 <CheckCircle className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">R$ {receitaPaga.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-green-600">R$ {receitaPaga.toLocaleString('pt-BR')}</div>
                 <p className="text-xs text-muted-foreground">
                   Pagamentos recebidos
                 </p>
@@ -160,7 +123,7 @@ const Financeiro = () => {
                 <Clock className="h-4 w-4 text-yellow-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">R$ {receitaPendente.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-yellow-600">R$ {receitaPendente.toLocaleString('pt-BR')}</div>
                 <p className="text-xs text-muted-foreground">
                   Aguardando pagamento
                 </p>
@@ -172,7 +135,7 @@ const Financeiro = () => {
                 <AlertTriangle className="h-4 w-4 text-red-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">R$ {receitaAtrasada.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-red-600">R$ {receitaAtrasada.toLocaleString('pt-BR')}</div>
                 <p className="text-xs text-muted-foreground">
                   Pagamentos em atraso
                 </p>
@@ -190,17 +153,17 @@ const Financeiro = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        {contrato.cliente}
+                        {contrato.clientes?.nome || 'Cliente não encontrado'}
                       </h3>
-                      <Badge className={getStatusColor(contrato.status_pagamento)}>
+                      <Badge className={getStatusColor(contrato.status_pagamento || 'pendente')}>
                         <div className="flex items-center gap-1">
-                          {getStatusIcon(contrato.status_pagamento)}
-                          {getStatusText(contrato.status_pagamento)}
+                          {getStatusIcon(contrato.status_pagamento || 'pendente')}
+                          {getStatusText(contrato.status_pagamento || 'pendente')}
                         </div>
                       </Badge>
                     </div>
                     <p className="text-gray-600 font-medium mb-2">
-                      {contrato.empresa}
+                      {contrato.clientes?.empresa || 'Empresa não informada'}
                     </p>
                     <p className="text-gray-700 mb-4">
                       {contrato.tipo_servico}
@@ -210,7 +173,7 @@ const Financeiro = () => {
                       <div>
                         <p className="text-sm text-gray-500">Valor Mensal</p>
                         <p className="text-lg font-semibold text-green-600">
-                          R$ {contrato.valor_mensal.toLocaleString()}
+                          R$ {(contrato.valor_mensal || 0).toLocaleString('pt-BR')}
                         </p>
                       </div>
                       <div>
@@ -247,6 +210,22 @@ const Financeiro = () => {
             </Card>
           ))}
         </div>
+
+        {contratos.length === 0 && (
+          <div className="text-center py-12">
+            <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Nenhum contrato encontrado
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Comece criando seu primeiro contrato
+            </p>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Contrato
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

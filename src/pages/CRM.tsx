@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +22,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -30,68 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Cliente {
-  id: string;
-  nome: string;
-  empresa: string;
-  email: string;
-  telefone: string;
-  cidade: string;
-  status: 'ativo' | 'inativo' | 'prospect';
-  valor_contrato: number;
-  data_cadastro: string;
-  observacoes: string;
-}
+import { useClientes } from "@/hooks/useClientes";
+import ClienteForm from "@/components/forms/ClienteForm";
 
 const CRM = () => {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const { clientes, isLoading } = useClientes();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // Dados simulados - será substituído por dados do Supabase
-  useEffect(() => {
-    const clientesSimulados: Cliente[] = [
-      {
-        id: "1",
-        nome: "João Silva",
-        empresa: "Tech Solutions",
-        email: "joao@techsolutions.com",
-        telefone: "(11) 99999-9999",
-        cidade: "São Paulo",
-        status: "ativo",
-        valor_contrato: 5000,
-        data_cadastro: "2024-01-15",
-        observacoes: "Cliente estratégico, foco em SEO"
-      },
-      {
-        id: "2",
-        nome: "Maria Santos",
-        empresa: "Inovação Digital",
-        email: "maria@inovacao.com",
-        telefone: "(11) 88888-8888",
-        cidade: "Rio de Janeiro",
-        status: "prospect",
-        valor_contrato: 3000,
-        data_cadastro: "2024-02-10",
-        observacoes: "Interessada em redes sociais"
-      },
-      {
-        id: "3",
-        nome: "Carlos Oliveira",
-        empresa: "StartupXYZ",
-        email: "carlos@startupxyz.com",
-        telefone: "(11) 77777-7777",
-        cidade: "Belo Horizonte",
-        status: "ativo",
-        valor_contrato: 7500,
-        data_cadastro: "2024-01-20",
-        observacoes: "Foco em performance marketing"
-      }
-    ];
-    setClientes(clientesSimulados);
-  }, []);
 
   const filteredClientes = clientes.filter(cliente => {
     const matchesSearch = cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,9 +58,18 @@ const CRM = () => {
     }
   };
 
-  const handleNovoCliente = () => {
-    setIsDialogOpen(true);
-  };
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando clientes...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -129,7 +83,7 @@ const CRM = () => {
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={handleNovoCliente} className="flex items-center gap-2">
+                <Button className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   Novo Cliente
                 </Button>
@@ -138,57 +92,7 @@ const CRM = () => {
                 <DialogHeader>
                   <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
                 </DialogHeader>
-                <div className="grid grid-cols-2 gap-4 py-4">
-                  <div>
-                    <Label htmlFor="nome">Nome Completo</Label>
-                    <Input id="nome" placeholder="Digite o nome" />
-                  </div>
-                  <div>
-                    <Label htmlFor="empresa">Empresa</Label>
-                    <Input id="empresa" placeholder="Nome da empresa" />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input id="email" type="email" placeholder="email@exemplo.com" />
-                  </div>
-                  <div>
-                    <Label htmlFor="telefone">Telefone</Label>
-                    <Input id="telefone" placeholder="(11) 99999-9999" />
-                  </div>
-                  <div>
-                    <Label htmlFor="cidade">Cidade</Label>
-                    <Input id="cidade" placeholder="Cidade" />
-                  </div>
-                  <div>
-                    <Label htmlFor="status">Status</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="prospect">Prospect</SelectItem>
-                        <SelectItem value="ativo">Ativo</SelectItem>
-                        <SelectItem value="inativo">Inativo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="valor">Valor do Contrato</Label>
-                    <Input id="valor" type="number" placeholder="0,00" />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="observacoes">Observações</Label>
-                    <Textarea id="observacoes" placeholder="Informações adicionais sobre o cliente" />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={() => setIsDialogOpen(false)}>
-                    Salvar Cliente
-                  </Button>
-                </div>
+                <ClienteForm onSuccess={() => setIsDialogOpen(false)} />
               </DialogContent>
             </Dialog>
           </div>
@@ -230,8 +134,8 @@ const CRM = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {cliente.nome}
                       </h3>
-                      <Badge className={getStatusColor(cliente.status)}>
-                        {cliente.status.charAt(0).toUpperCase() + cliente.status.slice(1)}
+                      <Badge className={getStatusColor(cliente.status || 'prospect')}>
+                        {cliente.status?.charAt(0).toUpperCase() + cliente.status?.slice(1)}
                       </Badge>
                     </div>
                     <p className="text-gray-600 font-medium mb-3">
@@ -245,11 +149,11 @@ const CRM = () => {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Phone className="h-4 w-4" />
-                        {cliente.telefone}
+                        {cliente.telefone || 'Não informado'}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <MapPin className="h-4 w-4" />
-                        {cliente.cidade}
+                        {cliente.cidade || 'Não informado'}
                       </div>
                     </div>
 
@@ -257,13 +161,13 @@ const CRM = () => {
                       <div>
                         <p className="text-sm text-gray-500">Valor do Contrato</p>
                         <p className="text-lg font-semibold text-green-600">
-                          R$ {cliente.valor_contrato.toLocaleString()}
+                          R$ {(cliente.valor_contrato || 0).toLocaleString('pt-BR')}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Cliente desde</p>
                         <p className="text-sm font-medium">
-                          {new Date(cliente.data_cadastro).toLocaleDateString('pt-BR')}
+                          {new Date(cliente.created_at || '').toLocaleDateString('pt-BR')}
                         </p>
                       </div>
                     </div>
@@ -298,7 +202,7 @@ const CRM = () => {
             <p className="text-gray-600 mb-4">
               {searchTerm ? 'Tente ajustar seus filtros de busca' : 'Comece cadastrando seu primeiro cliente'}
             </p>
-            <Button onClick={handleNovoCliente}>
+            <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Cadastrar Cliente
             </Button>

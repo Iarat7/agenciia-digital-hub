@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,84 +16,32 @@ import {
   Calendar
 } from "lucide-react";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Tarefa {
-  id: string;
-  titulo: string;
-  descricao: string;
-  cliente: string;
-  responsavel: string;
-  status: 'pendente' | 'em_andamento' | 'concluida' | 'atrasada';
-  prioridade: 'baixa' | 'media' | 'alta';
-  data_prazo: string;
-  data_criacao: string;
-}
+import { useTarefas } from "@/hooks/useTarefas";
+import TarefaForm from "@/components/forms/TarefaForm";
 
 const Tarefas = () => {
-  const [tarefas, setTarefas] = useState<Tarefa[]>([]);
+  const { tarefas, isLoading } = useTarefas();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todas");
   const [filterPrioridade, setFilterPrioridade] = useState("todas");
-
-  useEffect(() => {
-    const tarefasSimuladas: Tarefa[] = [
-      {
-        id: "1",
-        titulo: "Criar campanha Google Ads",
-        descricao: "Desenvolvimento de campanha de tráfego pago para lançamento de produto",
-        cliente: "Tech Solutions",
-        responsavel: "João Marketing",
-        status: "em_andamento",
-        prioridade: "alta",
-        data_prazo: "2024-01-25",
-        data_criacao: "2024-01-15"
-      },
-      {
-        id: "2",
-        titulo: "Relatório mensal de redes sociais",
-        descricao: "Compilar métricas e insights das redes sociais do cliente",
-        cliente: "Inovação Digital",
-        responsavel: "Maria Social",
-        status: "pendente",
-        prioridade: "media",
-        data_prazo: "2024-01-30",
-        data_criacao: "2024-01-18"
-      },
-      {
-        id: "3",
-        titulo: "Otimização SEO do site",
-        descricao: "Implementar melhorias de SEO técnico e conteúdo",
-        cliente: "StartupXYZ",
-        responsavel: "Pedro SEO",
-        status: "atrasada",
-        prioridade: "alta",
-        data_prazo: "2024-01-20",
-        data_criacao: "2024-01-10"
-      },
-      {
-        id: "4",
-        titulo: "Criação de conteúdo blog",
-        descricao: "Escrever 3 artigos para o blog do cliente",
-        cliente: "Tech Solutions",
-        responsavel: "Ana Conteúdo",
-        status: "concluida",
-        prioridade: "media",
-        data_prazo: "2024-01-22",
-        data_criacao: "2024-01-12"
-      }
-    ];
-    setTarefas(tarefasSimuladas);
-  }, []);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredTarefas = tarefas.filter(tarefa => {
     const matchesSearch = tarefa.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tarefa.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         tarefa.clientes?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tarefa.responsavel.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "todas" || tarefa.status === filterStatus;
     const matchesPrioridade = filterPrioridade === "todas" || tarefa.prioridade === filterPrioridade;
@@ -171,6 +119,19 @@ const Tarefas = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando tarefas...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const totalTarefas = tarefas.length;
   const tarefasPendentes = tarefas.filter(t => t.status === 'pendente').length;
   const tarefasAndamento = tarefas.filter(t => t.status === 'em_andamento').length;
@@ -186,10 +147,20 @@ const Tarefas = () => {
               <h1 className="text-3xl font-bold text-gray-900">Gestão de Tarefas</h1>
               <p className="text-gray-600">Organize e acompanhe tarefas por cliente</p>
             </div>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Nova Tarefa
-            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Nova Tarefa
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Criar Nova Tarefa</DialogTitle>
+                </DialogHeader>
+                <TarefaForm onSuccess={() => setIsDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* KPIs de Tarefas */}
@@ -292,14 +263,14 @@ const Tarefas = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {tarefa.titulo}
                       </h3>
-                      <Badge className={getStatusColor(tarefa.status)}>
+                      <Badge className={getStatusColor(tarefa.status || 'pendente')}>
                         <div className="flex items-center gap-1">
-                          {getStatusIcon(tarefa.status)}
-                          {getStatusText(tarefa.status)}
+                          {getStatusIcon(tarefa.status || 'pendente')}
+                          {getStatusText(tarefa.status || 'pendente')}
                         </div>
                       </Badge>
-                      <Badge className={getPrioridadeColor(tarefa.prioridade)}>
-                        {getPrioridadeText(tarefa.prioridade)}
+                      <Badge className={getPrioridadeColor(tarefa.prioridade || 'media')}>
+                        {getPrioridadeText(tarefa.prioridade || 'media')}
                       </Badge>
                     </div>
                     <p className="text-gray-700 mb-4">
@@ -309,7 +280,7 @@ const Tarefas = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <User className="h-4 w-4" />
-                        <span className="font-medium">Cliente:</span> {tarefa.cliente}
+                        <span className="font-medium">Cliente:</span> {tarefa.clientes?.nome}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <User className="h-4 w-4" />
@@ -345,7 +316,7 @@ const Tarefas = () => {
             <p className="text-gray-600 mb-4">
               {searchTerm ? 'Tente ajustar seus filtros de busca' : 'Comece criando sua primeira tarefa'}
             </p>
-            <Button>
+            <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Tarefa
             </Button>
