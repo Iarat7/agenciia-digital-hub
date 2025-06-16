@@ -89,10 +89,36 @@ export const useOportunidades = () => {
     }
   });
 
+  const deleteOportunidade = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('oportunidades')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['oportunidades'] });
+      toast({
+        title: "Oportunidade removida com sucesso!",
+        description: "A oportunidade foi removida do pipeline."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao remover oportunidade",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   return {
     oportunidades,
     isLoading,
     createOportunidade,
-    updateOportunidade
+    updateOportunidade,
+    deleteOportunidade
   };
 };

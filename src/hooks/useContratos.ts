@@ -89,10 +89,36 @@ export const useContratos = () => {
     }
   });
 
+  const deleteContrato = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('contratos')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contratos'] });
+      toast({
+        title: "Contrato removido com sucesso!",
+        description: "O contrato foi removido do sistema."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao remover contrato",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   return {
     contratos,
     isLoading,
     createContrato,
-    updateContrato
+    updateContrato,
+    deleteContrato
   };
 };

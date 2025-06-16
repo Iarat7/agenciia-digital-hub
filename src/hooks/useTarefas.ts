@@ -89,10 +89,36 @@ export const useTarefas = () => {
     }
   });
 
+  const deleteTarefa = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('tarefas')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tarefas'] });
+      toast({
+        title: "Tarefa removida com sucesso!",
+        description: "A tarefa foi removida do sistema."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao remover tarefa",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   return {
     tarefas,
     isLoading,
     createTarefa,
-    updateTarefa
+    updateTarefa,
+    deleteTarefa
   };
 };

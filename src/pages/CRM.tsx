@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,14 +28,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useClientes } from "@/hooks/useClientes";
 import ClienteForm from "@/components/forms/ClienteForm";
+import ClienteDetailsDialog from "@/components/dialogs/ClienteDetailsDialog";
+import ClienteEditDialog from "@/components/dialogs/ClienteEditDialog";
+import { Tables } from "@/integrations/supabase/types";
+
+type Cliente = Tables<'clientes'>;
 
 const CRM = () => {
-  const { clientes, isLoading } = useClientes();
+  const { clientes, isLoading, deleteCliente } = useClientes();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [clienteToDelete, setClienteToDelete] = useState<string | null>(null);
 
   const filteredClientes = clientes.filter(cliente => {
     const matchesSearch = cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,6 +74,31 @@ const CRM = () => {
         return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const handleViewDetails = (cliente: Cliente) => {
+    setSelectedCliente(cliente);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleEdit = (cliente: Cliente) => {
+    setSelectedCliente(cliente);
+    setIsEditDialogOpen(true);
+    setIsDetailsDialogOpen(false);
+  };
+
+  const handleDelete = (clienteId: string) => {
+    setClienteToDelete(clienteId);
+    setIsDeleteDialogOpen(true);
+    setIsDetailsDialogOpen(false);
+  };
+
+  const confirmDelete = () => {
+    if (clienteToDelete) {
+      deleteCliente.mutate(clienteToDelete);
+      setClienteToDelete(null);
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -81,7 +125,7 @@ const CRM = () => {
               <h1 className="text-3xl font-bold text-gray-900">CRM - Clientes</h1>
               <p className="text-gray-600">Gerencie seus clientes e prospects</p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
@@ -92,7 +136,7 @@ const CRM = () => {
                 <DialogHeader>
                   <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
                 </DialogHeader>
-                <ClienteForm onSuccess={() => setIsDialogOpen(false)} />
+                <ClienteForm onSuccess={() => setIsCreateDialogOpen(false)} />
               </DialogContent>
             </Dialog>
           </div>
@@ -180,10 +224,18 @@ const CRM = () => {
                   </div>
 
                   <div className="flex gap-2 ml-4">
-                    <Button variant="outline" size="icon">
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => handleViewDetails(cliente)}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="icon">
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => handleEdit(cliente)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
                   </div>
@@ -202,12 +254,44 @@ const CRM = () => {
             <p className="text-gray-600 mb-4">
               {searchTerm ? 'Tente ajustar seus filtros de busca' : 'Comece cadastrando seu primeiro cliente'}
             </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Cadastrar Cliente
             </Button>
           </div>
         )}
+
+        {/* Dialogs */}
+        <ClienteDetailsDialog
+          cliente={selectedCliente}
+          open={isDetailsDialogOpen}
+          onOpenChange={setIsDetailsDialogOpen}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+
+        <ClienteEditDialog
+          cliente={selectedCliente}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

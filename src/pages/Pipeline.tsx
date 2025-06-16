@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,12 +17,37 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useOportunidades } from "@/hooks/useOportunidades";
 import OportunidadeForm from "@/components/forms/OportunidadeForm";
+import OportunidadeDetailsDialog from "@/components/dialogs/OportunidadeDetailsDialog";
+import OportunidadeEditDialog from "@/components/dialogs/OportunidadeEditDialog";
+import { Tables } from "@/integrations/supabase/types";
+
+type Oportunidade = Tables<'oportunidades'> & {
+  clientes?: {
+    nome: string;
+    empresa: string;
+  };
+};
 
 const Pipeline = () => {
-  const { oportunidades, isLoading } = useOportunidades();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { oportunidades, isLoading, updateOportunidade } = useOportunidades();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedOportunidade, setSelectedOportunidade] = useState<Oportunidade | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [oportunidadeToDelete, setOportunidadeToDelete] = useState<string | null>(null);
 
   const getEtapaColor = (etapa: string) => {
     switch (etapa) {
@@ -59,6 +83,34 @@ const Pipeline = () => {
     }
   };
 
+  const handleViewDetails = (oportunidade: Oportunidade) => {
+    setSelectedOportunidade(oportunidade);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleEdit = (oportunidade: Oportunidade) => {
+    setSelectedOportunidade(oportunidade);
+    setIsEditDialogOpen(true);
+    setIsDetailsDialogOpen(false);
+  };
+
+  const handleDelete = (oportunidadeId: string) => {
+    setOportunidadeToDelete(oportunidadeId);
+    setIsDeleteDialogOpen(true);
+    setIsDetailsDialogOpen(false);
+  };
+
+  const confirmDelete = () => {
+    if (oportunidadeToDelete) {
+      updateOportunidade.mutate({
+        id: oportunidadeToDelete,
+        etapa: 'perdido'
+      });
+      setOportunidadeToDelete(null);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -85,7 +137,7 @@ const Pipeline = () => {
               <h1 className="text-3xl font-bold text-gray-900">Pipeline Comercial</h1>
               <p className="text-gray-600">Gerencie suas oportunidades de vendas</p>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
@@ -96,7 +148,7 @@ const Pipeline = () => {
                 <DialogHeader>
                   <DialogTitle>Criar Nova Oportunidade</DialogTitle>
                 </DialogHeader>
-                <OportunidadeForm onSuccess={() => setIsDialogOpen(false)} />
+                <OportunidadeForm onSuccess={() => setIsCreateDialogOpen(false)} />
               </DialogContent>
             </Dialog>
           </div>
@@ -194,10 +246,18 @@ const Pipeline = () => {
                     </div>
 
                     <div className="flex gap-2 ml-4">
-                      <Button variant="outline" size="icon">
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => handleViewDetails(oportunidade)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="icon">
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => handleEdit(oportunidade)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </div>
@@ -207,6 +267,38 @@ const Pipeline = () => {
             ))
           )}
         </div>
+
+        {/* Dialogs */}
+        <OportunidadeDetailsDialog
+          oportunidade={selectedOportunidade}
+          open={isDetailsDialogOpen}
+          onOpenChange={setIsDetailsDialogOpen}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+
+        <OportunidadeEditDialog
+          oportunidade={selectedOportunidade}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Marcar como Perdida</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja marcar esta oportunidade como perdida?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>
+                Marcar como Perdida
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
